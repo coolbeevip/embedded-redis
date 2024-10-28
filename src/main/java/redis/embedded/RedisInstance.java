@@ -50,6 +50,13 @@ public abstract class RedisInstance implements Redis {
 
             active = true;
         } catch (final IOException e) {
+            File execFile = new File(args.get(0));
+            if (!execFile.exists()) {
+                throw new IOException("Redis server binary was not found at " + execFile.getAbsolutePath(), e);
+            }
+            if (!execFile.canExecute()) {
+                throw new IOException("Redis server binary is not executable: " + execFile.getAbsolutePath(), e);
+            }
             throw new IOException("Failed to start Redis service", e);
         }
     }
