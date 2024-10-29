@@ -40,9 +40,6 @@ public abstract class RedisInstance implements Redis {
         if (active) return;
 
         try {
-            for (String arg: args){
-                LOG.info("arg: " + arg);
-            }
             process = new ProcessBuilder(args).directory(new File(args.get(0)).getParentFile()).start();
             addShutdownHook("RedisInstanceCleaner", checkedToRuntime(this::stop));
             awaitServerReady(process, readyPattern, soutListener, serrListener);

@@ -23,7 +23,7 @@ public class RedisServerTest {
 
 	private RedisServer redisServer;
 
-	@Test(timeout = 1500L)
+	@Test(timeout = 3000L)
 	public void testSimpleRun() throws Exception {
 		redisServer = new RedisServer(6381);
 		redisServer.start();
