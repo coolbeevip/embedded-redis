@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -14,7 +15,7 @@ import static java.nio.file.Files.createTempDirectory;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public enum IO {;
-
+    static Logger LOG = Logger.getLogger(IO.class.getName());
     public static File newTempDirForBinary() throws IOException {
         final File tempDirectory = createDirectories(createTempDirectory("redis-")).toFile();
         tempDirectory.deleteOnExit();
@@ -30,6 +31,7 @@ public enum IO {;
         executable.deleteOnExit();
         if (!executable.setExecutable(true))
             throw new IOException("Failed to set executable permission for binary " + resourcePath + " at temporary location " + executable);
+        LOG.info("Extracted " + resourcePath + " to " + executable);
         return executable;
     }
 

@@ -2,16 +2,21 @@ package redis.embedded;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
-import static redis.embedded.util.IO.*;
+import static redis.embedded.util.IO.addShutdownHook;
+import static redis.embedded.util.IO.checkedToRuntime;
+import static redis.embedded.util.IO.findMatchInStream;
+import static redis.embedded.util.IO.logStream;
+import static redis.embedded.util.IO.newDaemonThread;
+import static redis.embedded.util.IO.readFully;
 
 public abstract class RedisInstance implements Redis {
-
+    static Logger LOG = Logger.getLogger(RedisInstance.class.getName());
     private final Pattern readyPattern;
     private final int port;
     private final List<String> args;
@@ -22,9 +27,7 @@ public abstract class RedisInstance implements Redis {
     private volatile boolean active = false;
     private Process process;
 
-    protected RedisInstance(final int port, final List<String> args, final Pattern readyPattern,
-                            final boolean forceStop, final Consumer<String> soutListener,
-                            final Consumer<String> serrListener) {
+    protected RedisInstance(final int port, final List<String> args, final Pattern readyPattern, final boolean forceStop, final Consumer<String> soutListener, final Consumer<String> serrListener) {
         this.port = port;
         this.args = args;
         this.readyPattern = readyPattern;
@@ -37,16 +40,15 @@ public abstract class RedisInstance implements Redis {
         if (active) return;
 
         try {
-            process = new ProcessBuilder(args)
-                .directory(new File(args.get(0)).getParentFile())
-                .start();
+            for (String arg: args){
+                LOG.info("arg: " + arg);
+            }
+            process = new ProcessBuilder(args).directory(new File(args.get(0)).getParentFile()).start();
             addShutdownHook("RedisInstanceCleaner", checkedToRuntime(this::stop));
             awaitServerReady(process, readyPattern, soutListener, serrListener);
 
-            if (serrListener != null)
-                newDaemonThread(() -> logStream(process.getErrorStream(), serrListener)).start();
-            if (soutListener != null)
-                newDaemonThread(() -> logStream(process.getInputStream(), soutListener)).start();
+            if (serrListener != null) newDaemonThread(() -> logStream(process.getErrorStream(), serrListener)).start();
+            if (soutListener != null) newDaemonThread(() -> logStream(process.getInputStream(), soutListener)).start();
 
             active = true;
         } catch (final IOException e) {
@@ -84,20 +86,16 @@ public abstract class RedisInstance implements Redis {
     // package manager. Such as with apt-get (sudo apt-get install libssl1.0.0 libssl-dev). If you are running this
     // inside a docker image you'll need to make sure the library is available inside the image.
 
-    private static void awaitServerReady(final Process process, final Pattern readyPattern
-            , final Consumer<String> soutListener, final Consumer<String> serrListener) throws IOException {
+    private static void awaitServerReady(final Process process, final Pattern readyPattern, final Consumer<String> soutListener, final Consumer<String> serrListener) throws IOException {
         final StringBuilder log = new StringBuilder();
         if (!findMatchInStream(process.getInputStream(), readyPattern, soutListener, log)) {
             final String stdOut = log.toString();
             final String stdErr = readFully(process.getErrorStream(), serrListener);
 
-            throw new IOException("Redis-server process appears not to have started. "
-                + (isNullOrEmpty(stdOut) ? "No output was found in standard-out." : "stdandard-out contains this: " + stdOut)
-                + " "
-                + (isNullOrEmpty(stdErr) ? "No output was found in standard-err." : "stdandard-err contains this: " + stdErr)
-            );
+            throw new IOException("Redis-server process appears not to have started. " + (isNullOrEmpty(stdOut) ? "No output was found in standard-out." : "stdandard-out contains this: " + stdOut) + " " + (isNullOrEmpty(stdErr) ? "No output was found in standard-err." : "stdandard-err contains this: " + stdErr));
         }
     }
+
     private static boolean isNullOrEmpty(final String value) {
         return value == null || value.isEmpty();
     }
@@ -106,8 +104,7 @@ public abstract class RedisInstance implements Redis {
         if (!active) return;
 
         try {
-            if (forceStop)
-                process.destroyForcibly();
+            if (forceStop) process.destroyForcibly();
             else {
                 process.destroy();
                 process.waitFor();
