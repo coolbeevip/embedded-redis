@@ -134,8 +134,8 @@ public interface ExecutableProvider {
         final Map<OsArchitecture, String> map = new HashMap<>();
         map.put(UNIX_x86, "/redis-server-6.2.7-linux-386");
         map.put(UNIX_x86_64, "/redis-server-6.2.6-v5-linux-amd64");
-        map.put(UNIX_x86_64_MUSL, "/redis-server-7.4.1-linux-amd64-musl");
-        map.put(UNIX_AARCH64_MUSL, "/redis-server-7.4.1-linux-arm64-musl");
+        map.put(UNIX_x86_64_MUSL, "/redis-server-7.2.5-linux-amd64-musl");
+        map.put(UNIX_AARCH64_MUSL, "/redis-server-7.2.5-linux-arm64-musl");
         map.put(UNIX_AARCH64, "/redis-server-6.2.7-linux-arm64");
         map.put(WINDOWS_x86_64, "/redis-server-5.0.14.1-windows-amd64.exe");
         map.put(MAC_OS_X_x86_64, "/redis-server-6.2.6-v5-darwin-amd64");
